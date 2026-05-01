@@ -1,0 +1,1593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta Name="viewport" content="width=device-width, initial-scale=1.0">
+<title>[ RESTRICTED ] — MENU_ADMIN v3.0</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=VT323&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#000;--surface:#050f05;--surface2:#091409;--surface3:#0d1f0d;
+  --border:#1a3a1a;--border2:#2a5a2a;
+  --green:#00ff41;--green-dim:#00ff4108;--green-mid:#00cc33;--green-glow:#00ff4140;
+  --green2:#39ff14;--cyan:#00ffff;--red:#ff0000;--amber:#ffaa00;
+  --text:#c8ffc8;--muted:#3a7a3a;--dim:#1a4a1a;
+  --mono:'Share Tech Mono',monospace;--display:'Orbitron',monospace;--vt:'VT323',monospace;
+  --scanline:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.15) 2px,rgba(0,0,0,0.15) 4px);
+}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg);color:var(--text);font-family:var(--mono);min-height:100vh;
+  position:relative;overflow-x:hidden;cursor:crosshair;
+}
+
+/* ── CRT OVERLAY ── */
+body::before{
+  content:'';position:fixed;inset:0;
+  background:var(--scanline);
+  pointer-events:none;z-index:9999;opacity:.4;
+}
+body::after{
+  content:'';position:fixed;inset:0;
+  background:radial-gradient(ellipse at center,transparent 60%,rgba(0,20,0,0.8) 100%);
+  pointer-events:none;z-index:9998;
+}
+
+/* ── MATRIX RAIN CANVAS ── */
+#matrixCanvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;opacity:.07}
+
+/* ── NOISE TEXTURE ── */
+.noise{position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.03;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ── PASSWORD OVERLAY ── */
+#lockScreen{
+  position:fixed;inset:0;z-index:10000;
+  background:#000;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  font-family:var(--mono);
+}
+#lockScreen.unlocking{animation:unlockFlash .8s ease forwards}
+@keyframes unlockFlash{
+  0%{opacity:1}20%{opacity:0;background:#00ff41}40%{opacity:1;background:#000}
+  60%{opacity:.5}80%{opacity:1}100%{opacity:0;pointer-events:none}
+}
+.lock-skull{font-size:72px;animation:floatSkull 3s ease-in-out infinite;filter:drop-shadow(0 0 20px var(--green));margin-bottom:20px}
+@keyframes floatSkull{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+.lock-title{font-family:var(--display);font-size:clamp(14px,3vw,22px);color:var(--green);letter-spacing:.2em;text-align:center;margin-bottom:8px;text-shadow:0 0 20px var(--green)}
+.lock-sub{font-size:11px;color:var(--muted);letter-spacing:.15em;margin-bottom:40px;text-align:center}
+.lock-box{background:var(--surface);border:1px solid var(--border2);border-radius:4px;padding:28px 32px;width:min(380px,90vw);position:relative}
+.lock-box::before{content:'[ AUTHENTICATION REQUIRED ]';position:absolute;top:-10px;left:50%;transform:translateX(-50%);font-size:9px;color:var(--green);background:#000;padding:0 8px;white-space:nowrap;letter-spacing:.1em}
+.lock-label{font-size:9px;color:var(--muted);letter-spacing:.15em;text-transform:uppercase;margin-bottom:6px;display:block}
+.lock-input-wrap{position:relative;margin-bottom:16px}
+.lock-input{
+  width:100%;background:#000;border:1px solid var(--border2);border-radius:3px;
+  padding:12px 42px 12px 14px;font-family:var(--mono);font-size:16px;
+  color:var(--green);outline:none;letter-spacing:.2em;transition:border-color .2s,box-shadow .2s;
+}
+.lock-input:focus{border-color:var(--green);box-shadow:0 0 12px var(--green-glow)}
+.lock-toggle{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:4px;transition:color .15s}
+.lock-toggle:hover{color:var(--green)}
+.lock-btn{
+  width:100%;padding:13px;background:transparent;border:1px solid var(--green);
+  font-family:var(--display);font-size:11px;font-weight:700;color:var(--green);
+  letter-spacing:.2em;cursor:pointer;border-radius:3px;transition:all .15s;
+  position:relative;overflow:hidden;text-transform:uppercase;
+}
+.lock-btn::before{content:'';position:absolute;inset:0;background:var(--green);transform:translateX(-100%);transition:transform .3s ease;z-index:0}
+.lock-btn:hover::before{transform:translateX(0)}
+.lock-btn:hover{color:#000}
+.lock-btn span{position:relative;z-index:1}
+.lock-error{font-size:11px;color:var(--red);margin-top:10px;text-align:center;display:none;animation:glitch .3s ease}
+.lock-error.show{display:block}
+.lock-attempts{font-size:9px;color:var(--muted);margin-top:6px;text-align:center;letter-spacing:.1em}
+@keyframes shakeX{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+
+/* TYPING EFFECT */
+.typewriter{overflow:hidden;white-space:nowrap;border-right:.1em solid var(--green);width:0;animation:typing 2s steps(30,end) forwards .5s,blink .75s step-end infinite}
+@keyframes typing{from{width:0}to{width:100%}}
+@keyframes blink{0%,100%{border-color:var(--green)}50%{border-color:transparent}}
+
+/* ── MAIN APP ── */
+#app{position:relative;z-index:2;min-height:100vh;display:none}
+#app.visible{display:block}
+
+/* ── HEADER ── */
+.header{
+  border-bottom:1px solid var(--border2);padding:0 32px;
+  display:flex;align-items:center;gap:14px;position:sticky;top:0;
+  background:rgba(0,0,0,0.95);z-index:200;height:52px;
+  backdrop-filter:blur(4px);
+}
+.header::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--green),transparent);animation:scanH 4s linear infinite}
+@keyframes scanH{0%{opacity:0;transform:scaleX(0)}50%{opacity:1;transform:scaleX(1)}100%{opacity:0;transform:scaleX(0)}}
+.header-dot{width:9px;height:9px;border-radius:50%;background:var(--green);box-shadow:0 0 12px var(--green),0 0 24px var(--green);flex-shrink:0;animation:pulse 1.5s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(0.8)}}
+.header h1{font-family:var(--display);font-size:11px;font-weight:700;letter-spacing:.2em;color:var(--green);text-shadow:0 0 10px var(--green)}
+.header-sub{font-family:var(--mono);font-size:10px;color:var(--muted);margin-left:auto;letter-spacing:.1em}
+.header-badge{
+  font-size:8px;padding:2px 6px;border:1px solid var(--green);border-radius:2px;color:var(--green);
+  letter-spacing:.1em;text-transform:uppercase;animation:pulse 2s ease-in-out infinite;
+}
+.lock-icon-btn{
+  background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;padding:4px;
+  transition:color .15s;margin-left:8px;
+}
+.lock-icon-btn:hover{color:var(--red)}
+
+/* ── TERMINAL BAR ── */
+.terminal-bar{
+  background:var(--surface);border-bottom:1px solid var(--border);
+  padding:6px 32px;font-size:10px;color:var(--muted);letter-spacing:.05em;
+  display:flex;align-items:center;gap:16px;overflow:hidden;
+}
+.term-item{display:flex;align-items:center;gap:6px}
+.term-item::before{content:'//';color:var(--dim)}
+.term-ping{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 1s ease-in-out infinite}
+#liveClock{color:var(--green)}
+#statusText{animation:termTyping 3s ease-in-out infinite alternate}
+@keyframes termTyping{0%{opacity:1}100%{opacity:.4}}
+
+/* ── MAIN ── */
+.main{max-width:1000px;margin:0 auto;padding:36px 32px 80px;position:relative}
+@media(max-width:600px){.main{padding:20px 14px 80px}.header{padding:0 14px}}
+
+/* ── SECTIONS ── */
+.section{margin-bottom:32px;animation:fadeInUp .4s ease both}
+@keyframes fadeInUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.step-label{
+  font-family:var(--display);font-size:9px;font-weight:700;color:var(--green);
+  letter-spacing:.2em;text-transform:uppercase;margin-bottom:12px;
+  display:flex;align-items:center;gap:10px;
+}
+.step-label .step-num{
+  background:var(--green);color:#000;width:20px;height:20px;
+  border-radius:2px;display:flex;align-items:center;justify-content:center;
+  font-size:10px;font-weight:900;flex-shrink:0;
+}
+.step-label .step-line{flex:1;height:1px;background:linear-gradient(90deg,var(--border2),transparent)}
+
+/* ── INPUT FIELDS ── */
+.field{
+  width:100%;background:var(--surface);border:1px solid var(--border2);border-radius:4px;
+  padding:12px 14px;font-family:var(--mono);font-size:12px;color:var(--text);
+  outline:none;transition:all .2s;letter-spacing:.02em;
+}
+.field:focus{border-color:var(--green);box-shadow:0 0 0 1px var(--green),0 0 16px var(--green-glow);background:#000a00}
+.field::placeholder{color:var(--muted)}
+
+/* ── BUTTONS ── */
+.btn{
+  display:inline-flex;align-items:center;gap:7px;padding:10px 20px;
+  border-radius:4px;border:none;font-family:var(--mono);font-size:11px;
+  font-weight:500;cursor:pointer;transition:all .15s;letter-spacing:.06em;
+  position:relative;overflow:hidden;text-transform:uppercase;
+}
+.btn::after{
+  content:'';position:absolute;inset:0;background:rgba(255,255,255,0.1);
+  transform:scale(0);border-radius:50%;transition:transform .4s ease,opacity .4s ease;opacity:0;
+}
+.btn.ripple::after{transform:scale(4);opacity:0;transition:transform .4s ease,opacity .8s ease}
+.btn-primary{background:var(--green);color:#000;font-family:var(--display);font-weight:700}
+.btn-primary:hover{background:var(--green2);box-shadow:0 0 20px var(--green-glow);transform:translateY(-1px)}
+.btn-primary:active{transform:translateY(0)}
+.btn-primary:disabled{opacity:.25;cursor:not-allowed;transform:none;box-shadow:none}
+.btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border2)}
+.btn-ghost:hover{border-color:var(--green);color:var(--green);box-shadow:0 0 8px var(--green-glow)}
+.btn-dl{
+  background:transparent;color:var(--green);border:1px solid var(--green);
+  width:100%;justify-content:center;padding:14px;font-family:var(--display);
+  font-weight:700;letter-spacing:.15em;font-size:11px;
+}
+.btn-dl:hover{background:var(--green-dim);box-shadow:0 0 20px var(--green-glow),inset 0 0 20px var(--green-dim)}
+.btn-dl:disabled{opacity:.2;cursor:not-allowed;box-shadow:none}
+.btn-sm{padding:5px 10px;font-size:10px}
+.btn-danger{color:var(--red);border-color:#ff000030;background:transparent}
+.btn-danger:hover{border-color:var(--red);background:#ff000010;box-shadow:0 0 8px #ff000040}
+.btn-add{color:var(--green);border-color:#00ff4130;background:transparent}
+.btn-add:hover{border-color:var(--green);background:var(--green-dim);box-shadow:0 0 8px var(--green-glow)}
+
+/* ── STATUS ── */
+.status{border-radius:4px;padding:10px 14px;font-family:var(--mono);font-size:11px;margin-top:12px;display:none;line-height:1.5;position:relative;overflow:hidden}
+.status.show{display:block}
+.status::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px}
+.status.loading{background:#010a01;border:1px solid var(--border2);color:var(--muted)}
+.status.loading::before{background:var(--muted);animation:loadPulse .5s ease-in-out infinite alternate}
+@keyframes loadPulse{to{opacity:.2}}
+.status.success{background:#001a00;border:1px solid #00ff4130;color:var(--green)}
+.status.success::before{background:var(--green)}
+.status.error{background:#1a0000;border:1px solid #ff000030;color:var(--red)}
+.status.error::before{background:var(--red)}
+.status.warn{background:#1a0f00;border:1px solid #ffaa0030;color:var(--amber)}
+.status.warn::before{background:var(--amber)}
+.spin{display:inline-block;width:11px;height:11px;border:1.5px solid var(--muted);border-top-color:var(--green);border-radius:50%;animation:spin .5s linear infinite;vertical-align:middle;margin-right:4px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── FILE DROP ── */
+.file-drop{
+  border:1px dashed var(--border2);border-radius:6px;padding:28px;
+  text-align:center;cursor:pointer;transition:all .2s;position:relative;
+  background:var(--surface);
+}
+.file-drop:hover,.file-drop.drag{border-color:var(--green);background:#001500;box-shadow:0 0 20px var(--green-dim)}
+.file-drop input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.file-drop-icon{font-size:32px;margin-bottom:8px;display:block;filter:drop-shadow(0 0 8px var(--green))}
+.file-drop p{font-size:12px;color:var(--muted);margin-top:4px;letter-spacing:.05em}
+.file-drop p strong{color:var(--text)}
+.file-Name{margin-top:0;font-family:var(--mono);font-size:11px;color:var(--green);display:none}
+.file-Name.show{display:block}
+
+/* ── PREVIEW BOX ── */
+.preview-box{background:var(--surface);border:1px solid var(--border2);border-radius:6px;overflow:hidden;margin-top:14px}
+.preview-tabs{display:flex;border-bottom:1px solid var(--border2);background:#020802}
+.ptab{padding:10px 18px;font-family:var(--display);font-size:9px;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;user-select:none;letter-spacing:.12em;text-transform:uppercase}
+.ptab.active{color:var(--green);border-bottom-color:var(--green);background:#001500}
+.ptab:hover:not(.active){color:var(--text);background:#0a150a}
+
+/* INFO EDITOR */
+.info-editor{padding:16px;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:520px){.info-editor{grid-template-columns:1fr}}
+.info-field{background:var(--surface2);border-radius:4px;padding:10px 12px;border:1px solid var(--border)}
+.info-field label{display:block;font-family:var(--display);font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:.15em;margin-bottom:5px}
+.info-field input{width:100%;background:transparent;border:none;border-bottom:1px solid var(--border2);font-family:var(--mono);font-size:12px;color:var(--text);outline:none;padding:3px 0;transition:border-color .15s}
+.info-field input:focus{border-bottom-color:var(--green)}
+
+/* ITEMS TABLE */
+.items-editor-wrap{overflow-x:auto;max-height:420px;overflow-y:auto}
+.items-editor-wrap::-webkit-scrollbar{width:5px;height:5px}
+.items-editor-wrap::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+.items-editor-wrap::-webkit-scrollbar-track{background:var(--surface)}
+.items-table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:11px;min-width:900px}
+.items-table th{padding:9px 8px;text-align:left;color:var(--muted);font-weight:500;background:#020802;border-bottom:1px solid var(--border2);white-space:nowrap;position:sticky;top:0;z-index:2;font-family:var(--display);font-size:8px;letter-spacing:.1em}
+.items-table th:first-child{width:40px;text-align:center}
+.items-table td{padding:3px 4px;border-bottom:1px solid var(--border);vertical-align:middle}
+.items-table td:first-child{text-align:center;color:var(--muted);font-size:10px;width:40px}
+.items-table tr:last-child td{border-bottom:none}
+.items-table tr:hover td{background:#001500}
+.cell-input{width:100%;background:transparent;border:none;border-bottom:1px solid transparent;font-family:var(--mono);font-size:11px;color:var(--text);outline:none;padding:4px 4px;transition:all .15s;min-width:60px}
+.cell-input:focus{border-bottom-color:var(--green);background:#001a0080}
+.cell-input.narrow{min-width:44px;width:60px}
+.cell-input.wide{min-width:110px}
+.items-table .del-btn{background:none;border:none;color:#ff000033;cursor:pointer;font-size:15px;padding:2px 6px;transition:color .15s;line-height:1}
+.items-table .del-btn:hover{color:var(--red);text-shadow:0 0 8px var(--red)}
+
+.toolbar{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-top:1px solid var(--border);background:#020802;flex-wrap:wrap;gap:8px}
+.toolbar-counts{font-family:var(--mono);font-size:10px;color:var(--muted)}
+.toolbar-counts span{color:var(--green)}
+
+/* CODE BOX */
+.code-box{padding:16px;font-family:var(--mono);font-size:11px;color:#5eff90;max-height:360px;overflow-y:auto;white-space:pre;line-height:1.7;background:#000a00}
+.code-box::-webkit-scrollbar{width:5px}
+.code-box::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+
+/* DIVIDER */
+.div{border:none;border-top:1px solid var(--border);margin:28px 0;position:relative}
+.div::after{content:'[ DATA INJECTOR ]';position:absolute;top:-7px;left:50%;transform:translateX(-50%);font-size:8px;color:var(--muted);background:#000;padding:0 10px;letter-spacing:.2em;white-space:nowrap}
+
+/* SUCCESS PANEL */
+.success-panel{background:#001500;border:1px solid #00ff4130;border-radius:6px;padding:20px 24px;display:none;margin-top:16px}
+.success-panel.show{display:block;animation:fadeInUp .3s ease}
+.success-panel h3{font-family:var(--display);font-size:11px;color:var(--green);margin-bottom:6px;letter-spacing:.1em}
+.success-panel p{font-size:11px;color:#5fa87a;line-height:1.7}
+
+/* ── GLITCH ── */
+.glitch{position:relative}
+.glitch::before,.glitch::after{
+  content:attr(data-text);position:absolute;top:0;left:0;width:100%;
+}
+.glitch::before{color:var(--cyan);animation:glitch1 2s infinite .1s;clip-path:polygon(0 30%,100% 30%,100% 50%,0 50%)}
+.glitch::after{color:var(--red);animation:glitch2 2s infinite .2s;clip-path:polygon(0 65%,100% 65%,100% 80%,0 80%)}
+@keyframes glitch1{0%,94%{transform:none;opacity:0}95%{transform:translate(-2px);opacity:.8}97%{transform:translate(2px);opacity:.8}100%{transform:none;opacity:0}}
+@keyframes glitch2{0%,94%{transform:none;opacity:0}95%{transform:translate(2px);opacity:.6}97%{transform:translate(-2px);opacity:.6}100%{transform:none;opacity:0}}
+
+/* ── NOTIFICATION TOAST ── */
+#toast{
+  position:fixed;bottom:24px;right:24px;z-index:9999;
+  background:#001a00;border:1px solid var(--green);border-radius:4px;
+  padding:12px 16px;font-family:var(--mono);font-size:11px;color:var(--green);
+  transform:translateX(120%);transition:transform .3s ease;
+  max-width:280px;box-shadow:0 0 20px var(--green-glow);
+}
+#toast.show{transform:translateX(0)}
+
+/* ── PROGRESS BAR ── */
+.hack-progress{height:2px;background:var(--border);border-radius:1px;margin-top:8px;overflow:hidden;display:none}
+.hack-progress.show{display:block}
+.hack-fill{height:100%;background:var(--green);width:0%;transition:width .05s linear;box-shadow:0 0 6px var(--green)}
+
+/* ── CURSOR TRAIL ── */
+.cursor-dot{position:fixed;width:4px;height:4px;background:var(--green);border-radius:50%;pointer-events:none;z-index:9997;opacity:0.6;transition:opacity .5s ease}
+
+/* ── LAYOUT WRAP ── */
+#appInner{display:flex;min-height:calc(100vh - 52px - 32px)}
+
+/* ── MOBILE SIDEBAR TOGGLE ── */
+#sidebarToggle{
+  display:none;background:none;border:1px solid var(--border2);border-radius:3px;
+  color:var(--green);cursor:pointer;font-size:14px;padding:4px 8px;margin-left:6px;
+  font-family:var(--mono);transition:all .15s;
+}
+#sidebarToggle:hover{border-color:var(--green);box-shadow:0 0 8px var(--green-glow)}
+#sidebarOverlay{
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:190;
+}
+#sidebarOverlay.show{display:block}
+
+/* ── LEFT HACKER PANEL ── */
+#hackerPanel{
+  width:220px;flex-shrink:0;background:#020a02;border-right:1px solid var(--border2);
+  padding:16px 0 0;display:flex;flex-direction:column;gap:0;position:sticky;top:84px;
+  height:calc(100vh - 84px);overflow-y:auto;transition:transform .3s ease;
+}
+#hackerPanel::-webkit-scrollbar{width:3px}
+#hackerPanel::-webkit-scrollbar-thumb{background:var(--border2)}
+
+/* ── COMPANIES PANEL ── */
+#companiesPanel{
+  margin:8px 10px;border:1px solid var(--border2);border-radius:4px;
+  background:#010a01;overflow:hidden;display:flex;flex-direction:column;
+  flex:1;min-height:0;
+}
+.companies-header{
+  font-family:var(--display);font-size:7px;color:var(--green);letter-spacing:.2em;
+  text-transform:uppercase;padding:6px 10px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:6px;flex-shrink:0;
+}
+.companies-header::before{content:'◉';font-size:8px;animation:pulse 1.5s infinite}
+#companiesList{overflow-y:auto;flex:1;min-height:0}
+#companiesList::-webkit-scrollbar{width:3px}
+#companiesList::-webkit-scrollbar-thumb{background:var(--border2)}
+.company-btn{
+  display:block;width:100%;background:none;border:none;border-bottom:1px solid var(--border);
+  padding:7px 10px;font-family:var(--mono);font-size:9px;color:var(--muted);
+  cursor:pointer;text-align:left;transition:all .15s;letter-spacing:.04em;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.company-btn:last-child{border-bottom:none}
+.company-btn:hover{color:var(--green);background:#001a00;padding-left:14px}
+.company-btn.active{color:var(--green);background:#001500;border-left:2px solid var(--green);padding-left:8px}
+.company-btn .co-icon{margin-right:5px;font-size:8px}
+#companiesLoading{
+  padding:10px;font-size:9px;color:var(--muted);text-align:center;letter-spacing:.1em;
+  display:flex;align-items:center;justify-content:center;gap:6px;
+}
+#companiesError{padding:8px 10px;font-size:9px;color:var(--red);letter-spacing:.08em;cursor:pointer}
+#companiesError:hover{text-decoration:underline}
+
+/* ── SEPARATE INFO/ITEMS BUTTONS ── */
+.tab-action-btns{
+  display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;
+}
+.tab-action-btn{
+  flex:1;min-width:120px;display:inline-flex;align-items:center;justify-content:center;
+  gap:6px;padding:10px 14px;border-radius:4px;border:1px solid var(--border2);
+  background:var(--surface);font-family:var(--display);font-size:9px;font-weight:700;
+  color:var(--muted);cursor:pointer;transition:all .2s;letter-spacing:.12em;text-transform:uppercase;
+}
+.tab-action-btn:hover{border-color:var(--green);color:var(--green);box-shadow:0 0 12px var(--green-glow);background:#001500}
+.tab-action-btn.active{border-color:var(--green);color:#000;background:var(--green);box-shadow:0 0 16px var(--green-glow)}
+.tab-action-btn .tab-count{
+  background:rgba(0,0,0,0.3);border-radius:2px;padding:1px 5px;font-size:8px;
+  font-family:var(--mono);
+}
+.tab-action-btn.active .tab-count{background:rgba(0,0,0,0.2)}
+
+/* ── RESPONSIVE ── */
+@media(max-width:768px){
+  #sidebarToggle{display:inline-flex;align-items:center}
+  #hackerPanel{
+    position:fixed;top:0;left:0;height:100vh;z-index:195;
+    transform:translateX(-100%);padding-top:60px;
+  }
+  #hackerPanel.open{transform:translateX(0)}
+  #mainContent{width:100%}
+  .header{padding:0 12px;gap:8px}
+  .header h1{font-size:9px;letter-spacing:.12em}
+  .main{padding:16px 12px 60px}
+  .tab-action-btns{flex-direction:row}
+  .tab-action-btn{min-width:unset;font-size:8px;padding:8px 10px}
+  .items-table{min-width:700px}
+}
+@media(max-width:480px){
+  .header h1{display:none}
+  .header-badge{display:none}
+  .tab-action-btn .tab-count{display:none}
+}
+.hp-section-title{
+  font-family:var(--display);font-size:7px;color:var(--dim);letter-spacing:.25em;
+  text-transform:uppercase;padding:8px 14px 4px;border-top:1px solid var(--border);
+  margin-top:8px;
+}
+.hp-section-title:first-child{border-top:none;margin-top:0}
+.hp-btn{
+  display:flex;align-items:center;gap:8px;width:100%;background:none;border:none;
+  padding:9px 14px;font-family:var(--mono);font-size:10px;color:var(--muted);
+  cursor:pointer;transition:all .15s;text-align:left;border-left:2px solid transparent;
+  position:relative;overflow:hidden;
+}
+.hp-btn:hover{color:var(--green);background:#001a00;border-left-color:var(--green)}
+.hp-btn.active{color:var(--green);background:#001500;border-left-color:var(--green)}
+.hp-btn .hp-icon{font-size:12px;flex-shrink:0;width:16px;text-align:center}
+.hp-btn .hp-label{flex:1}
+.hp-btn .hp-badge{font-size:8px;background:var(--green);color:#000;padding:1px 5px;border-radius:2px;font-family:var(--display);font-weight:700}
+.hp-btn.danger{color:#ff4444}
+.hp-btn.danger:hover{color:var(--red);background:#1a0000;border-left-color:var(--red)}
+.hp-btn::after{content:'';position:absolute;left:0;top:0;bottom:0;width:0;background:var(--green-dim);transition:width .3s}
+.hp-btn:hover::after{width:100%}
+
+/* Inject URL button — special */
+#injectUrlBtn{
+  margin:12px 10px 4px;padding:10px 12px;border-radius:4px;
+  border:1px solid var(--green);background:transparent;
+  font-family:var(--display);font-size:9px;font-weight:700;color:var(--green);
+  cursor:pointer;letter-spacing:.12em;text-transform:uppercase;width:calc(100% - 20px);
+  position:relative;overflow:hidden;transition:all .2s;display:block;text-align:left;
+}
+#injectUrlBtn::before{content:'';position:absolute;inset:0;background:var(--green);transform:scaleX(0);transform-origin:left;transition:transform .35s ease;z-index:0}
+#injectUrlBtn:hover::before{transform:scaleX(1)}
+#injectUrlBtn:hover{color:#000;box-shadow:0 0 20px var(--green-glow)}
+#injectUrlBtn span{position:relative;z-index:1}
+#injectUrlBtn .btn-blink{animation:blink .8s step-end infinite;margin-right:4px}
+
+/* ── TIMER WIDGET ── */
+#timerWidget{
+  margin:8px 10px;padding:10px 12px;border:1px solid #1a3a1a;border-radius:4px;
+  background:#010801;font-family:var(--display);
+}
+#timerLabel{font-size:7px;color:var(--muted);letter-spacing:.2em;text-transform:uppercase;margin-bottom:4px}
+#timerDisplay{font-size:22px;color:var(--green);text-shadow:0 0 10px var(--green);letter-spacing:.1em;line-height:1}
+#timerDisplay.warn{color:var(--amber);text-shadow:0 0 10px var(--amber);animation:timerPulse .5s ease-in-out infinite}
+#timerDisplay.danger{color:var(--red);text-shadow:0 0 10px var(--red);animation:timerPulse .25s ease-in-out infinite}
+@keyframes timerPulse{0%,100%{opacity:1}50%{opacity:.4}}
+#timerBar{height:3px;background:#0a1a0a;border-radius:2px;margin-top:6px;overflow:hidden}
+#timerFill{height:100%;background:var(--green);width:100%;transition:width 1s linear;border-radius:2px}
+#timerFill.warn{background:var(--amber)}
+#timerFill.danger{background:var(--red)}
+
+/* ── TYPING PROGRESS AREA ── */
+#typingSection{
+  margin:4px 10px;padding:8px 10px;border:1px solid var(--border);border-radius:4px;
+  background:#010801;display:none;
+}
+#typingSection.show{display:block}
+#typingLabel{font-size:7px;color:var(--muted);letter-spacing:.15em;text-transform:uppercase;margin-bottom:4px}
+#typingBar{height:4px;background:#0a1a0a;border-radius:2px;overflow:hidden}
+#typingFill{height:100%;background:var(--cyan);width:0%;transition:width .1s;box-shadow:0 0 6px var(--cyan)}
+#typingPct{font-size:9px;color:var(--cyan);margin-top:4px;text-align:right;font-family:var(--display)}
+
+/* ── MAIN CONTENT AREA ── */
+#mainContent{flex:1;min-width:0}
+.main{max-width:800px;margin:0 auto;padding:36px 28px 80px}
+
+/* ── HORROR LOCKDOWN OVERLAY ── */
+#horrorLock{
+  display:none;position:fixed;inset:0;z-index:99999;background:#000;
+  align-items:center;justify-content:center;flex-direction:column;
+  overflow:hidden;
+}
+#horrorLock.show{display:flex}
+#horrorBg{
+  position:absolute;inset:0;
+  background:radial-gradient(ellipse at center,#1a0000 0%,#000 60%);
+  animation:horrorBgPulse 0.3s ease-in-out infinite alternate;
+}
+@keyframes horrorBgPulse{0%{opacity:.6}100%{opacity:1}}
+#horrorNoise{position:absolute;inset:0;opacity:.08;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation:noiseAnim .1s steps(1) infinite;
+}
+@keyframes noiseAnim{0%{transform:translate(0,0)}25%{transform:translate(-2px,2px)}50%{transform:translate(2px,-1px)}75%{transform:translate(-1px,-2px)}100%{transform:translate(1px,1px)}}
+#horrorScanlines{
+  position:absolute;inset:0;
+  background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(255,0,0,0.05) 3px,rgba(255,0,0,0.05) 4px);
+  pointer-events:none;animation:scanSlide 8s linear infinite;
+}
+@keyframes scanSlide{0%{background-position:0 0}100%{background-position:0 100%}}
+#horrorContent{position:relative;z-index:2;text-align:center;padding:20px}
+#horrorFace{
+  font-size:clamp(80px,20vw,180px);
+  display:block;
+  animation:horrorFaceAnim .15s steps(1) infinite;
+  filter:drop-shadow(0 0 30px #ff0000) drop-shadow(0 0 60px #880000);
+  margin-bottom:10px;
+  transform-origin:center;
+}
+@keyframes horrorFaceAnim{
+  0%{transform:scale(1) rotate(0deg)}
+  10%{transform:scale(1.05) rotate(-2deg)}
+  20%{transform:scale(0.98) rotate(3deg)}
+  30%{transform:scale(1.08) rotate(-1deg)}
+  40%{transform:scale(1) rotate(2deg)}
+  50%{transform:scale(1.03) rotate(-3deg)}
+  60%{transform:scale(0.97) rotate(1deg)}
+  70%{transform:scale(1.06) rotate(-2deg)}
+  80%{transform:scale(1) rotate(3deg)}
+  90%{transform:scale(1.04) rotate(-1deg)}
+  100%{transform:scale(1) rotate(0deg)}
+}
+#horrorTitle{
+  font-family:var(--display);font-size:clamp(20px,5vw,48px);
+  color:#ff0000;letter-spacing:.15em;text-transform:uppercase;
+  text-shadow:0 0 20px #ff0000,0 0 40px #880000;
+  animation:horrorGlitch .2s steps(1) infinite;
+  margin-bottom:8px;
+}
+@keyframes horrorGlitch{
+  0%,94%{transform:none;filter:none}
+  95%{transform:translate(-4px,0);filter:hue-rotate(180deg)}
+  97%{transform:translate(4px,2px);filter:hue-rotate(90deg)}
+  99%{transform:translate(-2px,-2px)}
+  100%{transform:none;filter:none}
+}
+#horrorSub{
+  font-family:var(--mono);font-size:clamp(10px,2vw,14px);color:#660000;
+  letter-spacing:.2em;text-transform:uppercase;line-height:2;
+  animation:horrorFlicker 0.08s steps(1) infinite;
+}
+@keyframes horrorFlicker{0%,95%{opacity:1}96%{opacity:0}97%{opacity:1}98%{opacity:0}99%{opacity:1}100%{opacity:.8}}
+.horror-code{
+  font-family:var(--mono);font-size:11px;color:#330000;
+  margin-top:20px;letter-spacing:.1em;line-height:1.8;
+  animation:codeFlicker 2s steps(1) infinite;
+}
+@keyframes codeFlicker{0%,49%{opacity:.3}50%{opacity:.6}51%,100%{opacity:.3}}
+#horrorUnlockForm{margin-top:24px}
+#horrorPw{
+  background:#0a0000;border:1px solid #330000;border-radius:3px;
+  padding:10px 16px;font-family:var(--mono);font-size:14px;
+  color:#ff3333;outline:none;letter-spacing:.2em;text-align:center;
+  width:220px;transition:border-color .2s;
+}
+#horrorPw:focus{border-color:#660000;box-shadow:0 0 10px #33000080}
+#horrorUnlockBtn{
+  display:block;margin:10px auto 0;padding:10px 28px;
+  background:transparent;border:1px solid #330000;color:#660000;
+  font-family:var(--display);font-size:10px;letter-spacing:.15em;cursor:pointer;
+  transition:all .2s;border-radius:3px;text-transform:uppercase;
+}
+#horrorUnlockBtn:hover{border-color:#ff0000;color:#ff0000;box-shadow:0 0 12px #ff000040}
+#horrorErr{font-size:10px;color:#660000;margin-top:8px;min-height:16px;letter-spacing:.1em}
+
+/* blood drip effect */
+#horrorDrips{position:absolute;top:0;left:0;width:100%;height:100px;pointer-events:none;overflow:hidden}
+.drip{
+  position:absolute;top:0;width:6px;background:linear-gradient(180deg,#8b0000,#cc0000,#8b0000);
+  border-radius:0 0 50% 50%;animation:dripDown linear infinite;transform-origin:top;
+}
+@keyframes dripDown{
+  0%{height:0;opacity:1}80%{opacity:1}100%{height:120px;opacity:0}
+}
+</style>
+</head>
+<body>
+
+<canvas id="matrixCanvas"></canvas>
+<div class="noise"></div>
+
+<!-- ══════════════════════════════════════════════════════
+     LOCK SCREEN
+═══════════════════════════════════════════════════════ -->
+<div id="lockScreen">
+  <div class="lock-skull">💀</div>
+  <div class="lock-title glitch" data-text="RESTRICTED ACCESS">RESTRICTED ACCESS</div>
+  <div class="lock-sub">[ MENU ADMIN PORTAL — AUTHORIZED PERSONNEL ONLY ]</div>
+  <div class="lock-box">
+    <span class="lock-label">ACCESS KEY</span>
+    <div class="lock-input-wrap">
+      <input class="lock-input" id="pwInput" type="password" placeholder="••••••••" autocomplete="off" onkeydown="if(event.key==='Enter')unlock()">
+      <button class="lock-toggle" id="pwToggle" onclick="togglePw()" title="Toggle visibility">👁</button>
+    </div>
+    <button class="lock-btn" onclick="unlock()"><span>▶ AUTHENTICATE</span></button>
+    <div class="lock-error" id="lockError">⚠ ACCESS DENIED — INVALID KEY</div>
+    <div class="lock-attempts" id="lockAttempts">ATTEMPTS: <span id="attemptsLeft">5</span> REMAINING</div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<!-- ══════════════════════════════════════════════════════
+     MAIN APP
+═══════════════════════════════════════════════════════ -->
+<div id="app">
+
+  <div class="header">
+    <button id="sidebarToggle" onclick="toggleSidebar()" title="Toggle Panel">☰</button>
+    <div class="header-dot"></div>
+    <h1>MENU_ADMIN — DATA INJECTOR</h1>
+    <div class="header-badge">LIVE</div>
+    <span class="header-sub" id="liveClock">--:--:--</span>
+    <button class="lock-icon-btn" onclick="relock()" title="Lock Session">🔒</button>
+  </div>
+  <div id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+  <div class="terminal-bar">
+    <div class="term-item"><span class="term-ping"></span><span id="statusText">SYSTEM ONLINE — AWAITING COMMAND</span></div>
+    <div class="term-item">SESSION: <span id="sessionId" style="color:var(--green)"></span></div>
+    <div class="term-item">NODE: MENU-CORE-01</div>
+  </div>
+
+  <div id="appInner">
+
+  <!-- LEFT HACKER PANEL -->
+  <div id="hackerPanel">
+    <div id="timerWidget">
+      <div id="timerLabel">&#9201; SESSION EXPIRES</div>
+      <div id="timerDisplay">02:00</div>
+      <div id="timerBar"><div id="timerFill"></div></div>
+    </div>
+    <div id="typingSection">
+      <div id="typingLabel">&#8987; INJECT PROGRESS</div>
+      <div id="typingBar"><div id="typingFill"></div></div>
+      <div id="typingPct">0%</div>
+    </div>
+    <div class="hp-section-title">// COMPANIES</div>
+    <div style="padding:0 10px 6px;">
+      <button id="loadCompaniesBtn" onclick="loadCompanies()" style="
+        width:100%;padding:7px 10px;background:transparent;border:1px solid var(--border2);
+        border-radius:3px;font-family:var(--display);font-size:8px;font-weight:700;
+        color:var(--muted);cursor:pointer;letter-spacing:.15em;text-transform:uppercase;
+        transition:all .2s;display:flex;align-items:center;justify-content:center;gap:6px;
+      " onmouseover="this.style.borderColor='var(--green)';this.style.color='var(--green)';this.style.boxShadow='0 0 8px var(--green-glow)'"
+         onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--muted)';this.style.boxShadow='none'">
+        <span>&#9654;</span> LOAD COMPANIES
+      </button>
+    </div>
+    <div id="companiesPanel">
+      <div class="companies-header">SELECT COMPANY</div>
+      <div id="companiesList">
+        <div id="companiesLoading" style="display:none"><span class="spin"></span> LOADING...</div>
+        <div style="padding:14px 10px;font-size:9px;color:var(--dim);text-align:center;letter-spacing:.08em;">PRESS LOAD TO FETCH</div>
+      </div>
+    </div>
+    <div style="padding:8px 10px;flex-shrink:0;border-top:1px solid var(--border);margin-top:auto;">
+      <button class="hp-btn danger" onclick="relock()" style="width:100%;border-radius:3px;border:1px solid #ff000030;justify-content:center;gap:8px;">
+        <span class="hp-icon">&#128274;</span><span class="hp-label">LOCK SESSION</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div id="mainContent">
+  <div class="main">
+
+    <!-- STEP 1 -->
+    <div class="section" style="animation-delay:.1s">
+      <div class="step-label"><span class="step-num">1</span>APPS SCRIPT ENDPOINT<span class="step-line"></span></div>
+      <div style="position:relative">
+        <input class="field" id="scriptUrl" type="text" autocomplete="off"
+          placeholder="https://script.google.com/macros/s/..."
+          oninput="updateUrlMask(this)" style="color:transparent;caret-color:var(--green);padding-right:40px">
+        <div id="urlMask" style="position:absolute;inset:0;padding:12px 40px 12px 14px;
+          font-family:'Share Tech Mono',monospace;font-size:12px;
+          pointer-events:none;white-space:nowrap;overflow:hidden;
+          display:flex;align-items:center;"></div>
+        <button onclick="toggleUrlReveal()" id="urlRevealBtn" title="Toggle reveal"
+          style="position:absolute;right:10px;top:50%;transform:translateY(-50%);
+          background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;transition:color .15s;">&#128065;</button>
+      </div>
+      <div class="hack-progress" id="fetchProgress"><div class="hack-fill" id="fetchFill"></div></div>
+      <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn btn-primary" id="fetchBtn" onclick="fetchData()">
+          <span id="fetchIcon">▶</span> <span>FETCH DATA</span>
+        </button>
+        <button class="btn btn-ghost btn-sm" onclick="clearUrl()">✕ CLEAR</button>
+      </div>
+      <div class="status" id="fetchStatus"></div>
+    </div>
+
+    <!-- STEP 2 -->
+    <div class="section" id="previewSection" style="display:none;animation-delay:.2s">
+      <div class="step-label"><span class="step-num">2</span>EDIT DATA — CHOOSE SECTION<span class="step-line"></span></div>
+
+      <!-- Separate action buttons for INFO and ITEMS -->
+      <div class="tab-action-btns">
+        <button class="tab-action-btn active" id="tabBtn-info" onclick="switchTabMain('info')">
+          ◈ &nbsp;RESTAURANT INFO
+          <span class="tab-count" id="infoFieldCount">10 fields</span>
+        </button>
+        <button class="tab-action-btn" id="tabBtn-items" onclick="switchTabMain('items')">
+          ≡ &nbsp;MENU ITEMS
+          <span class="tab-count" id="itemsTabCount">— items</span>
+        </button>
+        <button class="tab-action-btn" id="tabBtn-code" onclick="switchTabMain('code')">
+          {} &nbsp;CODE
+        </button>
+      </div>
+
+      <div class="preview-box">
+        <div class="preview-panel active" id="panel-info">
+          <div class="info-editor" id="infoEditor"></div>
+        </div>
+
+        <div class="preview-panel" id="panel-items">
+          <div class="items-editor-wrap">
+            <table class="items-table" id="itemsTable">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>CAT EN</th><th>Name EN</th><th>DESC EN</th>
+                  <th>PRICE</th><th>OFFER</th><th>ICON</th><th>IMAGE URL</th><th>TAGS</th>
+                  <th>CAT AR</th><th>Name AR</th><th>DESC AR</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="itemsBody"></tbody>
+            </table>
+          </div>
+          <div class="toolbar">
+            <span class="toolbar-counts" id="itemCounts"></span>
+            <button class="btn btn-ghost btn-sm btn-add" onclick="addRow()">+ ADD ROW</button>
+          </div>
+        </div>
+
+        <div class="preview-panel" id="panel-code">
+          <div class="code-box" id="codePreview"></div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="div" id="div2" style="display:none">
+
+    <!-- STEP 3 -->
+    <div class="section" id="uploadSection" style="display:none;animation-delay:.3s">
+      <div class="step-label"><span class="step-num">3</span>UPLOAD MENU HTML<span class="step-line"></span></div>
+      <input type="file" accept=".html" id="htmlFile" style="display:none" onchange="onFileSelected(event)">
+      <button class="btn btn-primary" onclick="document.getElementById('htmlFile').click()" style="font-size:12px;padding:12px 22px;">
+        &#128193;&nbsp;&nbsp;LOAD menu.html FROM DESKTOP
+      </button>
+      <div class="file-Name" id="fileName" style="margin-top:10px"></div>
+      <div class="status" id="fileStatus"></div>
+    </div>
+
+    <!-- STEP 4 -->
+    <div class="section" id="generateSection" style="display:none;animation-delay:.4s">
+      <div class="step-label"><span class="step-num">4</span>INJECT & DEPLOY<span class="step-line"></span></div>
+      <p style="font-size:11px;color:var(--muted);margin-bottom:14px;line-height:1.8;letter-spacing:.03em">
+        [ <code style="color:var(--green)">HARDCODED_INFO</code> ] and [ <code style="color:var(--green)">HARDCODED_ITEMS</code> ] will be overwritten with your edited data. All other content preserved.
+      </p>
+      <button class="btn btn-dl" id="generateBtn" onclick="generateFile()" disabled>
+        ⬇ &nbsp;INJECT DATA &amp; DOWNLOAD UPDATED HTML
+      </button>
+      <div class="status" id="generateStatus"></div>
+      <div class="success-panel" id="successPanel">
+        <h3>✓ INJECTION SUCCESSFUL</h3>
+        <p>The updated HTML has been downloaded. Replace your deployed file to push live changes.</p>
+      </div>
+    </div>
+
+  </div><!-- /main -->
+  </div><!-- /mainContent -->
+  </div><!-- /appInner -->
+</div><!-- /app -->
+
+<!-- HORROR LOCKDOWN OVERLAY -->
+<div id="horrorLock">
+  <div id="horrorBg"></div>
+  <div id="horrorNoise"></div>
+  <div id="horrorScanlines"></div>
+  <div id="horrorDrips"></div>
+  <div id="horrorContent">
+    <span id="horrorFace">&#128565;</span>
+    <div id="horrorTitle">ACCESS TERMINATED</div>
+    <div id="horrorSub">
+      &#9650; SESSION EXPIRED &#9650;<br>
+      SECURITY PROTOCOL ENGAGED<br>
+      ALL ACTIVITY HAS BEEN LOGGED
+    </div>
+    <div class="horror-code">
+      ERR_0xDEAD :: UNAUTHORIZED_TIMEOUT<br>
+      ROOT ACCESS REVOKED :: NODE OFFLINE<br>
+      INITIATING WIPE SEQUENCE...
+    </div>
+    <div id="horrorUnlockForm">
+      <input id="horrorPw" type="password" placeholder="ENTER MASTER KEY" autocomplete="off" onkeydown="if(event.key==='Enter')horrorUnlock()">
+      <button id="horrorUnlockBtn" onclick="horrorUnlock()">&#9654; OVERRIDE</button>
+      <div id="horrorErr"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     AUDIO ENGINE
+═══════════════════════════════════════════════════════ -->
+<script>
+// ── AUDIO (Web Audio API — no external files needed) ──────────────────────
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+let ctx = null;
+function getCtx(){ if(!ctx) ctx=new AudioCtx(); return ctx; }
+
+function playBeep(freq=440,dur=0.08,type='square',vol=0.06){
+  try{
+    const c=getCtx();
+    const o=c.createOscillator(),g=c.createGain();
+    o.connect(g);g.connect(c.destination);
+    o.frequency.value=freq;o.type=type;
+    g.gain.setValueAtTime(vol,c.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+dur);
+    o.start(c.currentTime);o.stop(c.currentTime+dur);
+  }catch(e){}
+}
+function playClick(){ playBeep(800,0.03,'square',0.05) }
+function playError(){ playBeep(150,0.25,'sawtooth',0.08);setTimeout(()=>playBeep(120,0.2,'sawtooth',0.07),120) }
+function playSuccess(){
+  [523,659,784,1047].forEach((f,i)=>setTimeout(()=>playBeep(f,0.1,'sine',0.07),i*70));
+}
+function playUnlock(){
+  [200,300,500,700,900].forEach((f,i)=>setTimeout(()=>playBeep(f,0.08,'square',0.05),i*40));
+  setTimeout(()=>playSuccess(),300);
+}
+function playKeyType(){ playBeep(600+Math.random()*200,0.025,'square',0.03) }
+function playDownload(){ [500,700,900,1200].forEach((f,i)=>setTimeout(()=>playBeep(f,0.12,'sine',0.06),i*80)) }
+function playFetch(){ playBeep(300,0.05,'square',0.04);setTimeout(()=>playBeep(400,0.05,'square',0.04),60) }
+
+// Add click sounds to all buttons
+document.addEventListener('click',e=>{
+  if(e.target.matches('button:not(#pwToggle),.btn,.ptab,.del-btn,.lock-btn')){
+    playClick();
+  }
+},{passive:true});
+
+// Key typing sounds on inputs
+document.addEventListener('keydown',e=>{
+  if(['INPUT','TEXTAREA'].includes(e.target.tagName)) playKeyType();
+},{passive:true});
+</script>
+
+<script>
+// ── MATRIX RAIN ─────────────────────────────────────────────────────────
+const canvas=document.getElementById('matrixCanvas');
+const mctx=canvas.getContext('2d');
+let cols,drops,matrixActive=true;
+const chars='アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン0123456789ABCDEF><{}[]|\\/_';
+
+function resizeMatrix(){
+  canvas.width=window.innerWidth;canvas.height=window.innerHeight;
+  cols=Math.floor(canvas.width/18);drops=Array(cols).fill(1);
+}
+function drawMatrix(){
+  if(!matrixActive)return;
+  mctx.fillStyle='rgba(0,0,0,0.05)';
+  mctx.fillRect(0,0,canvas.width,canvas.height);
+  mctx.fillStyle='#00ff41';mctx.font='14px Share Tech Mono';
+  drops.forEach((y,i)=>{
+    const ch=chars[Math.floor(Math.random()*chars.length)];
+    mctx.fillText(ch,i*18,y*18);
+    if(y*18>canvas.height&&Math.random()>.975) drops[i]=0;
+    drops[i]++;
+  });
+}
+resizeMatrix();
+window.addEventListener('resize',resizeMatrix);
+setInterval(drawMatrix,50);
+</script>
+
+<script>
+// ── CURSOR TRAIL ─────────────────────────────────────────────────────────
+const trailDots=[];const MAX_TRAIL=8;
+document.addEventListener('mousemove',e=>{
+  const dot=document.createElement('div');
+  dot.className='cursor-dot';
+  dot.style.left=e.clientX-2+'px';dot.style.top=e.clientY-2+'px';
+  document.body.appendChild(dot);
+  trailDots.push(dot);
+  if(trailDots.length>MAX_TRAIL){
+    const old=trailDots.shift();
+    old.style.opacity='0';
+    setTimeout(()=>old.remove(),500);
+  }
+});
+</script>
+
+<script>
+// ── CLOCK ────────────────────────────────────────────────────────────────
+function updateClock(){
+  const now=new Date();
+  document.getElementById('liveClock').textContent=
+    now.toTimeString().split(' ')[0];
+}
+setInterval(updateClock,1000);updateClock();
+
+// Session ID
+document.getElementById('sessionId').textContent='0x'+Math.random().toString(16).slice(2,10).toUpperCase();
+
+// Status text rotation
+const statusMessages=[
+  'SYSTEM ONLINE — AWAITING COMMAND',
+  'READY TO INJECT DATA',
+  'ALL SYSTEMS NOMINAL',
+  'CONNECTION SECURE — TLS 1.3',
+  'DATA PIPELINE ACTIVE',
+];
+let smIdx=0;
+setInterval(()=>{
+  smIdx=(smIdx+1)%statusMessages.length;
+  document.getElementById('statusText').textContent=statusMessages[smIdx];
+},4000);
+</script>
+
+<script>
+// ── PASSWORD ──────────────────────────────────────────────────────────────
+const CORRECT_PW='misseffi'; // ← CHANGE THIS PASSWORD
+let attempts=5;
+
+function togglePw(){
+  const inp=document.getElementById('pwInput');
+  inp.type=inp.type==='password'?'text':'password';
+  playClick();
+}
+
+function unlock(){
+  const val=document.getElementById('pwInput').value;
+  const errEl=document.getElementById('lockError');
+  if(val===CORRECT_PW){
+    playUnlock();
+    document.getElementById('lockScreen').classList.add('unlocking');
+    setTimeout(()=>{
+      document.getElementById('lockScreen').style.display='none';
+      document.getElementById('app').classList.add('visible');
+      showToast('✓ ACCESS GRANTED — WELCOME OPERATOR');
+    },800);
+  } else {
+    attempts--;
+    document.getElementById('attemptsLeft').textContent=attempts;
+    errEl.classList.add('show');
+    document.getElementById('lockScreen').style.animation='shakeX .4s ease';
+    setTimeout(()=>document.getElementById('lockScreen').style.animation='',400);
+    playError();
+    document.getElementById('pwInput').value='';
+    if(attempts<=0){
+      errEl.textContent='⛔ SYSTEM LOCKED — TOO MANY FAILED ATTEMPTS';
+      document.querySelector('.lock-btn').disabled=true;
+      document.getElementById('pwInput').disabled=true;
+    }
+  }
+}
+
+function relock(){
+  document.getElementById('lockScreen').style.display='flex';
+  document.getElementById('lockScreen').classList.remove('unlocking');
+  document.getElementById('lockScreen').style.animation='';
+  document.getElementById('app').classList.remove('visible');
+  document.getElementById('pwInput').value='';
+  attempts=5;
+  document.getElementById('attemptsLeft').textContent=5;
+  document.getElementById('lockError').classList.remove('show');
+  document.querySelector('.lock-btn').disabled=false;
+  document.getElementById('pwInput').disabled=false;
+  playBeep(300,0.1,'square',0.05);
+}
+</script>
+
+<script>
+// ── TOAST ────────────────────────────────────────────────────────────────
+let toastTimer;
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),3000);
+}
+</script>
+
+<script>
+// ── STATE ────────────────────────────────────────────────────────────────
+let infoData=null,itemsData=null,uploadedHtmlText=null;
+let uploadedFileName='menu_updated.html';
+
+const INFO_LABELS=['Name','Description','Location','Logo URL','Banner URL','Cafeteria WhatsApp','Rider Number','Track URL','Name (Arabic)','Desc (Arabic)'];
+const INFO_KEYS=['Name','Description','Location','Logo','Banner','cafeteria_wa','rider_number','track_url','Name_ar','desc_ar'];
+const ITEM_COLS=['Cat EN','Name EN','Desc EN','Price','Offer Price','Icon URL','Image URL','Tags','Cat AR','Name AR','Desc AR'];
+
+// ── UTILS ────────────────────────────────────────────────────────────────
+function normImg(url){
+  if(!url)return'';
+  const m=url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/)||url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  if(m)return'https://drive.google.com/thumbnail?id='+m[1]+'&sz=w1000';
+  return url;
+}
+function escSingle(s){return String(s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'")}
+function setStatus(id,type,msg){const el=document.getElementById(id);el.className='status show '+type;el.innerHTML=msg}
+function escHtmlAttr(s){return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')}
+function escHtml(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+
+function clearUrl(){document.getElementById('scriptUrl').value='';playClick()}
+
+// ── FETCH ────────────────────────────────────────────────────────────────
+async function fetchData(){
+  const url=document.getElementById('scriptUrl').value.trim();
+  if(!url){setStatus('fetchStatus','error','⚠ ENTER A VALID ENDPOINT URL');playError();return}
+  const btn=document.getElementById('fetchBtn');
+  btn.disabled=true;
+  document.getElementById('fetchIcon').innerHTML='<span class="spin"></span>';
+
+  // Animated progress
+  const prog=document.getElementById('fetchProgress');
+  const fill=document.getElementById('fetchFill');
+  prog.classList.add('show');fill.style.width='0%';
+  let pct=0;const pInterval=setInterval(()=>{pct=Math.min(pct+Math.random()*15,85);fill.style.width=pct+'%';},120);
+
+  setStatus('fetchStatus','loading','<span class="spin"></span> ESTABLISHING CONNECTION…');
+  playFetch();
+  try{
+    const res=await fetch(url);
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    const data=await res.json();
+
+    const infoSrc=(data.info&&data.info[0])?data.info[0]:{};
+    infoData=[
+      infoSrc['Name']||'',infoSrc['Description']||'',infoSrc['Location']||'',
+      infoSrc['Logo']||'',infoSrc['Banner']||'',
+      String(infoSrc['Cafeteria Number']||''),String(infoSrc['Rider Number']||''),
+      infoSrc['Track URL']||'',infoSrc['Name (Arabic)']||'',infoSrc['Description (Arabic)']||''
+    ];
+    const itemsRaw=Array.isArray(data)?data:(data.items||[]);
+    itemsData=itemsRaw.map(item=>[
+      item['Category Name']||'',item['Item Name']||'',item['Description']||'',
+      String(item['Price']||''),String(item['Offer Price']||''),
+      item['Catgory Icon']||'',normImg(item['Item Image']||''),
+      item['All Tags']||'',item['Category Name (Arabic)']||'',
+      item['Item Name (Arabic)']||'',item['Description (Arabic)']||''
+    ]);
+
+    clearInterval(pInterval);fill.style.width='100%';
+    setTimeout(()=>prog.classList.remove('show'),600);
+
+    setStatus('fetchStatus','success','✓ FETCHED '+itemsData.length+' ITEMS SUCCESSFULLY');
+    playSuccess();
+    showToast('✓ '+itemsData.length+' items loaded from sheet');
+    renderEditors();
+    document.getElementById('previewSection').style.display='';
+    document.getElementById('div2').style.display='';
+    document.getElementById('uploadSection').style.display='';
+    document.getElementById('generateSection').style.display='';
+    checkReady();
+  }catch(err){
+    clearInterval(pInterval);prog.classList.remove('show');
+    setStatus('fetchStatus','error','✗ CONNECTION FAILED — '+err.message);
+    playError();showToast('✗ Fetch failed: '+err.message);
+    infoData=null;itemsData=null;
+  }finally{
+    btn.disabled=false;
+    document.getElementById('fetchIcon').textContent='▶';
+  }
+}
+
+// ── RENDER INFO ──────────────────────────────────────────────────────────
+function renderInfoEditor(){
+  document.getElementById('infoEditor').innerHTML=INFO_LABELS.map((lbl,i)=>`
+    <div class="info-field">
+      <label>${lbl}</label>
+      <input id="info_${i}" value="${escHtmlAttr(infoData[i])}" oninput="infoData[${i}]=this.value;refreshCodeIfOpen()">
+    </div>`).join('');
+}
+
+// ── RENDER ITEMS TABLE ────────────────────────────────────────────────────
+function renderItemsTable(){
+  const tbody=document.getElementById('itemsBody');
+  tbody.innerHTML=itemsData.map((row,ri)=>renderRow(row,ri)).join('');
+  updateItemCounts();
+}
+function renderRow(row,ri){
+  const cols=row.map((v,ci)=>{
+    const cls=ci===6||ci===3||ci===4||ci===7?'wide':(ci===3||ci===4?'narrow':'');
+    return`<td><input class="cell-input ${cls}" data-r="${ri}" data-c="${ci}" value="${escHtmlAttr(v)}" oninput="cellChanged(this)"></td>`;
+  });
+  return`<tr id="row_${ri}"><td>${ri+1}</td>${cols.join('')}<td><button class="del-btn" onclick="deleteRow(${ri})" title="Delete">×</button></td></tr>`;
+}
+function cellChanged(inp){
+  const r=+inp.dataset.r,c=+inp.dataset.c;
+  itemsData[r][c]=inp.value;refreshCodeIfOpen();updateItemCounts();
+}
+function deleteRow(ri){
+  itemsData.splice(ri,1);renderItemsTable();refreshCodeIfOpen();
+  showToast('Row deleted');playBeep(300,0.08,'square',0.04);
+}
+function addRow(){
+  itemsData.push(['','','','','','','','','','','']);
+  renderItemsTable();
+  const wrap=document.querySelector('.items-editor-wrap');
+  wrap.scrollTop=wrap.scrollHeight;
+  const inp=document.querySelector(`[data-r="${itemsData.length-1}"][data-c="0"]`);
+  if(inp)inp.focus();
+  showToast('+ New row added');
+}
+function updateItemCounts(){
+  const offers=itemsData.filter(r=>r[4]&&r[4]!=='').length;
+  const cats=[...new Set(itemsData.map(r=>r[0]).filter(Boolean))].length;
+  document.getElementById('itemCounts').innerHTML=
+    `<span>${itemsData.length}</span> items · <span>${cats}</span> categories · <span>${offers}</span> with offers`;
+  const c=document.getElementById('itemsTabCount');
+  if(c) c.textContent=itemsData.length+' items';
+}
+function renderEditors(){renderInfoEditor();renderItemsTable()}
+
+// ── TABS ─────────────────────────────────────────────────────────────────
+function switchTabMain(Name){
+  ['info','items','code'].forEach(t=>{
+    const panel=document.getElementById('panel-'+t);
+    const btn=document.getElementById('tabBtn-'+t);
+    if(panel) panel.classList.toggle('active',t===Name);
+    if(btn) btn.classList.toggle('active',t===Name);
+  });
+  if(Name==='code')document.getElementById('codePreview').textContent=buildCodeBlock();
+}
+function switchTab(Name){ switchTabMain(Name); }
+function refreshCodeIfOpen(){
+  if(document.getElementById('panel-code').classList.contains('active'))
+    document.getElementById('codePreview').textContent=buildCodeBlock();
+}
+
+// ── CODE BUILDER ─────────────────────────────────────────────────────────
+function buildCodeBlock(){
+  if(!infoData||!itemsData)return'';
+  const hdr=['Name','Description','Location','Logo','Banner','Cafeteria Number','Rider Number','Track URL','Name (Arabic)','Description (Arabic)'];
+  let infoCode='const HARDCODED_INFO = [\n';
+  infoCode+="  ['"+hdr.map(h=>escSingle(h)).join("','")+"'],\n";
+  const vals=infoData.map(v=>`'${escSingle(v)}'`);
+  const lines=[];
+  for(let i=0;i<vals.length;i+=4)lines.push('   '+vals.slice(i,i+4).join(','));
+  infoCode+='  [\n'+lines.join(',\n')+'\n  ]\n];\n';
+  let itemsCode='const HARDCODED_ITEMS = [\n';
+  itemsCode+='// [cat_en, Name_en, desc_en, price, offer_price, cat_icon, image_url, tags, cat_ar, Name_ar, desc_ar]\n';
+  itemsCode+=itemsData.map(row=>'['+row.map(v=>`'${escSingle(v)}'`).join(',')+']').join(',\n');
+  itemsCode+='\n];';
+  return infoCode+'\n'+itemsCode;
+}
+
+// ── FILE UPLOAD ───────────────────────────────────────────────────────────
+function onFileSelected(ev){
+  const file=ev.target.files[0];
+  if(!file)return;
+  if(!file.Name.endsWith('.html')){setStatus('fileStatus','error','⚠ SELECT AN .html FILE');playError();return}
+  uploadedFileName=file.Name.replace('.html','_updated.html');
+  document.getElementById('fileName').textContent='📄 '+file.Name;
+  document.getElementById('fileName').classList.add('show');
+  const reader=new FileReader();
+  reader.onload=e=>{
+    uploadedHtmlText=e.target.result;
+    if(!uploadedHtmlText.includes('HARDCODED_INFO')||!uploadedHtmlText.includes('HARDCODED_ITEMS')){
+      setStatus('fileStatus','warn','⚠ HARDCODED_INFO / HARDCODED_ITEMS NOT FOUND — VERIFY FILE');
+      playError();
+    }else{
+      setStatus('fileStatus','success','✓ FILE VERIFIED — PLACEHOLDERS DETECTED');
+      playSuccess();showToast('✓ File loaded: '+file.Name);
+    }
+    checkReady();
+  };
+  reader.readAsText(file,'utf-8');
+}
+
+// drag-drop removed — using file button instead
+
+function checkReady(){
+  document.getElementById('generateBtn').disabled=!(infoData&&itemsData&&uploadedHtmlText);
+}
+
+// ── GENERATE ─────────────────────────────────────────────────────────────
+function generateFile(){
+  if(!infoData||!itemsData||!uploadedHtmlText){
+    setStatus('generateStatus','error','⚠ COMPLETE ALL STEPS FIRST');playError();return;
+  }
+  const newCode=buildCodeBlock();
+  let updated=uploadedHtmlText;
+  const p1=/\/\/\s*──\s*Hardcoded fallback data\s*──\s*\n[\s\S]*?const HARDCODED_INFO[\s\S]*?HARDCODED_ITEMS[\s\S]*?^\];/m;
+  const p2=/const HARDCODED_INFO[\s\S]*?HARDCODED_ITEMS[\s\S]*?^\];/m;
+  const replacement='// ── Hardcoded fallback data ──\n'+newCode;
+  if(p1.test(updated))updated=updated.replace(p1,replacement);
+  else if(p2.test(updated))updated=updated.replace(p2,newCode);
+  else{setStatus('generateStatus','error','✗ COULD NOT LOCATE HARDCODED BLOCKS');playError();return}
+  const blob=new Blob([updated],{type:'text/html;charset=utf-8'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=uploadedFileName;
+  document.body.appendChild(a);a.click();a.remove();
+  URL.revokeObjectURL(a.href);
+  setStatus('generateStatus','success','✓ INJECTED & DOWNLOADED: '+uploadedFileName);
+  playDownload();showToast('⬇ Downloaded: '+uploadedFileName);
+  document.getElementById('successPanel').classList.add('show');
+}
+
+// ── RIPPLE EFFECT ─────────────────────────────────────────────────────────
+document.addEventListener('click',e=>{
+  const btn=e.target.closest('.btn');
+  if(!btn)return;
+  btn.classList.remove('ripple');
+  void btn.offsetWidth;
+  btn.classList.add('ripple');
+});
+</script>
+<script>
+// ── HACKER PANEL FUNCTIONS ────────────────────────────────────────────────
+const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbyPDeo4ZT07nHa-RVe1XgTzTotcsQzxPq_07PKUBprJ8_FqkcbkgK68DP9_cGPWqghj/exec';
+
+// Words that type word-by-word into the URL field
+const HACKER_WORDS = [
+  'INITIALIZING','BOOT_SEQUENCE','LOADING_KERNEL',
+  'ESTABLISH_CONNECTION','INJECT','EXPLOIT',
+  'OVERRIDE_FIREWALL','BYPASS_AUTH','ROOT_ACCESS',
+  'DEPLOY_PAYLOAD','EXECUTE','COMMIT','PUSH',
+  'SYNC_DATABASE','INJECT_DATA','PATCH_LIVE'
+];
+
+let typingInterval = null;
+let typingWordIdx = 0;
+let typingCharIdx = 0;
+let typingPhase = 'words'; // 'words' | 'url'
+let urlTypingInterval = null;
+
+function injectUrl() {
+  const field = document.getElementById('scriptUrl');
+  // If already has the URL, just trigger fetch
+  if (field.value === BACKEND_URL) {
+    hackFetchData();
+    return;
+  }
+
+  // Stop any existing typing
+  clearInterval(typingInterval);
+  clearInterval(urlTypingInterval);
+
+  // Show typing progress section
+  document.getElementById('typingSection').classList.add('show');
+  setTypingProgress(0);
+
+  // Phase 1: type hacker words one by one
+  field.value = '';
+  typingWordIdx = 0;
+  let wordQueue = [...HACKER_WORDS];
+  let wordPos = 0;
+
+  // Simulate rapid hacker words flashing in the field
+  let wordTimer = 0;
+  const flashWords = () => {
+    if (wordPos >= wordQueue.length) {
+      // Phase 2: clear and type the real URL
+      field.value = '';
+      setTimeout(() => startUrlTyping(field), 200);
+      return;
+    }
+    field.value = '> ' + wordQueue[wordPos];
+    field.style.color = 'transparent';
+    updateUrlMask(field);
+    setTypingProgress(Math.round((wordPos / wordQueue.length) * 60));
+    wordPos++;
+    playBeep(400 + Math.random()*300, 0.03, 'square', 0.04);
+    wordTimer = setTimeout(flashWords, 80 + Math.random() * 60);
+  };
+  flashWords();
+}
+
+function startUrlTyping(field) {
+  const url = BACKEND_URL;
+  let i = 0;
+  field.value = '';
+  field.style.color = 'var(--cyan)';
+
+  urlTypingInterval = setInterval(() => {
+    field.value = url.slice(0, i + 1);
+    i++;
+    updateUrlMask(field);
+    setTypingProgress(60 + Math.round((i / url.length) * 40));
+    playBeep(600 + Math.random()*200, 0.02, 'square', 0.025);
+
+    if (i >= url.length) {
+      clearInterval(urlTypingInterval);
+      field.style.color = 'var(--text)';
+      setTypingProgress(100);
+      showToast('✓ ENDPOINT INJECTED — KEY MASKED');
+      playSuccess();
+      setTimeout(() => {
+        document.getElementById('typingSection').classList.remove('show');
+      }, 2000);
+    }
+  }, 18);
+}
+
+function setTypingProgress(pct) {
+  document.getElementById('typingFill').style.width = pct + '%';
+  document.getElementById('typingPct').textContent = pct + '%';
+}
+
+function hackFetchData() {
+  const field = document.getElementById('scriptUrl');
+  if (!field.value || field.value.startsWith('> ')) {
+    injectUrl();
+    setTimeout(() => fetchData(), (HACKER_WORDS.length * 120) + BACKEND_URL.length * 20 + 400);
+  } else {
+    fetchData();
+  }
+}
+
+function hackClearAll() {
+  clearUrl();
+  infoData = null; itemsData = null; uploadedHtmlText = null;
+  document.getElementById('previewSection').style.display = 'none';
+  document.getElementById('div2').style.display = 'none';
+  document.getElementById('uploadSection').style.display = 'none';
+  document.getElementById('generateSection').style.display = 'none';
+  showToast('✕ ALL DATA PURGED');
+  playError();
+}
+
+function hackTerminalBurst() {
+  const msgs = [
+    'PINGING REMOTE NODE...',
+    'SCANNING OPEN PORTS...',
+    'ARP CACHE POISONED',
+    'KERNEL BUFFER OVERFLOW DETECTED',
+    'PRIVILEGE ESCALATION: ROOT',
+    'INJECTING SHELLCODE...',
+    'PATCHING MEMORY SEGMENTS',
+    'BYPASSING WATCHDOG DAEMON',
+    'ALL SYSTEMS NOMINAL',
+  ];
+  let i = 0;
+  const run = () => {
+    if (i >= msgs.length) return;
+    document.getElementById('statusText').textContent = msgs[i++];
+    playBeep(300 + i*50, 0.04, 'square', 0.04);
+    setTimeout(run, 200 + Math.random()*150);
+  };
+  run();
+  showToast('◈ DIAGNOSTIC RUNNING...');
+}
+
+function hackMatrixBurst() {
+  const canvas = document.getElementById('matrixCanvas');
+  canvas.style.opacity = '0.25';
+  setTimeout(() => canvas.style.opacity = '0.07', 1500);
+  playBeep(50, 0.4, 'sawtooth', 0.08);
+  showToast('⣿ MATRIX BURST ACTIVATED');
+}
+
+// ── SIDEBAR TOGGLE (mobile) ───────────────────────────────────────────────
+function toggleSidebar() {
+  const panel = document.getElementById('hackerPanel');
+  const overlay = document.getElementById('sidebarOverlay');
+  const isOpen = panel.classList.contains('open');
+  if (isOpen) { closeSidebar(); } else {
+    panel.classList.add('open');
+    overlay.classList.add('show');
+    playBeep(400, 0.04, 'square', 0.04);
+  }
+}
+function closeSidebar() {
+  document.getElementById('hackerPanel').classList.remove('open');
+  document.getElementById('sidebarOverlay').classList.remove('show');
+}
+
+// ── COMPANIES LOADER ──────────────────────────────────────────────────────
+const COMPANIES_URL = 'https://script.googleusercontent.com/macros/echo?user_content_key=AUkAhnQpxappaC0n1-62uLPOVv7s3Zv--Ewu1OyXpyYXHpGT8QI9nz-5NhJhxHwdx1JgA9vip51AU-nFBhyfQ8GmKHc7kOFlphht17euzKmbIdta0ZODLdWFkhEuMvcEXSGlyVQK0VoMtIMVu0MfSMQMgM_eZz1xLSVF0lsvy4T1_p_xOAD0F9g4zV9bwtTkKvyWzOlhNnb7XqklzegCNZ5pwN4PX6aWwqL3uZub3KKTkQ97EI-Lg60A8K9xp1wrU3oU4ng5BMGOSeJ69RQf2BiSCboe22Fd1A&lib=MpStkkAx2ZPVT_l_YS0adZsfQ14OdA33W';
+let companiesData = [];
+let activeCompanyIdx = null;
+
+async function loadCompanies() {
+  const list = document.getElementById('companiesList');
+  const btn = document.getElementById('loadCompaniesBtn');
+  list.innerHTML = '<div id="companiesLoading"><span class="spin"></span> LOADING...</div>';
+  if (btn) { btn.disabled = true; btn.style.opacity = '0.5'; btn.style.cursor = 'not-allowed'; }
+  try {
+    const res = await fetch(COMPANIES_URL);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    companiesData = Array.isArray(data.items) ? data.items : (Array.isArray(data) ? data : []);
+    renderCompanyButtons();
+    showToast('✓ ' + companiesData.length + ' companies loaded');
+  } catch (err) {
+    list.innerHTML = `<div id="companiesError" onclick="loadCompanies()">✗ LOAD FAILED<br><span style="font-size:8px;color:var(--dim)">${err.message}<br>[ CLICK TO RETRY ]</span></div>`;
+    playError();
+  } finally {
+    if (btn) { btn.disabled = false; btn.style.opacity = '1'; btn.style.cursor = 'pointer'; }
+  }
+}
+
+function renderCompanyButtons() {
+  const list = document.getElementById('companiesList');
+  if (!companiesData.length) {
+    list.innerHTML = '<div id="companiesLoading" style="color:var(--muted)">NO COMPANIES FOUND</div>';
+    return;
+  }
+  list.innerHTML = companiesData.map((co, i) => {
+    const Name = co['Company Name'] || co['Name'] || 'COMPANY ' + (i + 1);
+    return `<button class="company-btn" id="co_btn_${i}" onclick="selectCompany(${i})" title="${Name}">
+      <span class="co-icon">▸</span>${Name}
+    </button>`;
+  }).join('');
+}
+
+function selectCompany(idx) {
+  activeCompanyIdx = idx;
+  // Highlight button
+  document.querySelectorAll('.company-btn').forEach((b, i) => b.classList.toggle('active', i === idx));
+
+  const co = companiesData[idx];
+  let endpoint = co['Endpount'] || co['Endpoint'] || co['endpoint'] || '';
+  // Normalize: add https:// if missing
+  if (endpoint && !endpoint.startsWith('http')) endpoint = 'https://' + endpoint;
+
+  const field = document.getElementById('scriptUrl');
+  field.value = endpoint;
+  field.style.color = 'transparent';
+  updateUrlMask(field);
+
+  playSuccess();
+  showToast('◉ LOADED: ' + (co['Company Name'] || 'Company'));
+  closeSidebar();
+
+  // Auto-scroll to step 1 on mobile
+  document.getElementById('scriptUrl').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+// ── SESSION TIMER ─────────────────────────────────────────────────────────
+const SESSION_DURATION = 1200; // 2 minutes
+let sessionSecondsLeft = SESSION_DURATION;
+let sessionTimerInterval = null;
+const CORRECT_PW_HORROR = 'misseffi';
+
+function startSessionTimer() {
+  sessionSecondsLeft = SESSION_DURATION;
+  clearInterval(sessionTimerInterval);
+  updateTimerDisplay();
+  sessionTimerInterval = setInterval(() => {
+    sessionSecondsLeft--;
+    updateTimerDisplay();
+    if (sessionSecondsLeft <= 0) {
+      clearInterval(sessionTimerInterval);
+      triggerHorrorLock();
+    }
+  }, 1000);
+}
+
+function updateTimerDisplay() {
+  const m = Math.floor(sessionSecondsLeft / 60);
+  const s = sessionSecondsLeft % 60;
+  const display = document.getElementById('timerDisplay');
+  const fill = document.getElementById('timerFill');
+  const bar = document.getElementById('timerBar').querySelector('#timerFill');
+
+  const pct = (sessionSecondsLeft / SESSION_DURATION) * 100;
+  display.textContent = String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+  document.getElementById('timerFill').style.width = pct + '%';
+
+  // Color states
+  display.className = '';
+  document.getElementById('timerFill').className = '';
+  if (sessionSecondsLeft <= 10) {
+    display.className = 'danger';
+    document.getElementById('timerFill').className = 'danger';
+    playBeep(220, 0.05, 'sawtooth', 0.04);
+  } else if (sessionSecondsLeft <= 30) {
+    display.className = 'warn';
+    document.getElementById('timerFill').className = 'warn';
+  }
+}
+
+// ── HORROR LOCKDOWN ───────────────────────────────────────────────────────
+function triggerHorrorLock() {
+  const hl = document.getElementById('horrorLock');
+  hl.classList.add('show');
+  spawnDrips();
+  playHorrorSound();
+  document.getElementById('horrorPw').focus();
+}
+
+function spawnDrips() {
+  const container = document.getElementById('horrorDrips');
+  container.innerHTML = '';
+  for (let i = 0; i < 18; i++) {
+    const d = document.createElement('div');
+    d.className = 'drip';
+    d.style.left = (Math.random() * 100) + '%';
+    d.style.width = (4 + Math.random() * 8) + 'px';
+    const dur = (1.5 + Math.random() * 3) + 's';
+    d.style.animationDuration = dur;
+    d.style.animationDelay = (Math.random() * 2) + 's';
+    container.appendChild(d);
+  }
+}
+
+function playHorrorSound() {
+  try {
+    const c = getCtx();
+    // Low rumble
+    const o1 = c.createOscillator(), g1 = c.createGain();
+    o1.connect(g1); g1.connect(c.destination);
+    o1.frequency.value = 60; o1.type = 'sawtooth';
+    g1.gain.setValueAtTime(0.12, c.currentTime);
+    g1.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 2.5);
+    o1.start(c.currentTime); o1.stop(c.currentTime + 2.5);
+
+    // High screech
+    const o2 = c.createOscillator(), g2 = c.createGain();
+    o2.connect(g2); g2.connect(c.destination);
+    o2.frequency.setValueAtTime(2000, c.currentTime);
+    o2.frequency.exponentialRampToValueAtTime(100, c.currentTime + 1.5);
+    o2.type = 'sawtooth';
+    g2.gain.setValueAtTime(0.08, c.currentTime);
+    g2.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 1.5);
+    o2.start(c.currentTime); o2.stop(c.currentTime + 1.5);
+  } catch(e) {}
+}
+
+function horrorUnlock() {
+  const pw = document.getElementById('horrorPw').value;
+  const err = document.getElementById('horrorErr');
+  if (pw === CORRECT_PW_HORROR) {
+    document.getElementById('horrorLock').classList.remove('show');
+    document.getElementById('horrorPw').value = '';
+    err.textContent = '';
+    startSessionTimer();
+    showToast('✓ OVERRIDE ACCEPTED — SESSION RESTORED');
+    playUnlock();
+  } else {
+    err.textContent = '⛔ INVALID OVERRIDE KEY';
+    document.getElementById('horrorPw').value = '';
+    playError();
+    // shake
+    const form = document.getElementById('horrorContent');
+    form.style.animation = 'shakeX .3s ease';
+    setTimeout(() => form.style.animation = '', 300);
+  }
+}
+
+// Hook session timer to app unlock
+const _origUnlock = window.unlock;
+window.unlock = function() {
+  _origUnlock && _origUnlock();
+  // Start timer after successful unlock
+  setTimeout(() => {
+    if (document.getElementById('app').classList.contains('visible')) {
+      startSessionTimer();
+    }
+  }, 900);
+};
+
+// Also hook relock to stop timer
+const _origRelock = window.relock;
+window.relock = function() {
+  clearInterval(sessionTimerInterval);
+  _origRelock && _origRelock();
+};
+</script>
+
+
+<script>
+// ── URL MASK & REVEAL ─────────────────────────────────────────────────────
+let urlRevealed = false;
+
+function updateUrlMask(inp) {
+  if (!inp) inp = document.getElementById('scriptUrl');
+  const val = inp ? inp.value : '';
+  const mask = document.getElementById('urlMask');
+  if (!mask) return;
+  if (!val) { mask.innerHTML = ''; return; }
+  if (urlRevealed) {
+    mask.innerHTML = '<span style="color:var(--cyan)">' + val.replace(/&/g,'&amp;').replace(/</g,'&lt;') + '</span>';
+    return;
+  }
+  const SHOW = 32;
+  const visible = val.slice(0, SHOW);
+  const hidden = val.slice(SHOW);
+  const masked = hidden.replace(/./g, '▓'); // ▓
+  mask.innerHTML =
+    '<span style="color:var(--green)">' + visible.replace(/&/g,'&amp;').replace(/</g,'&lt;') + '</span>' +
+    '<span style="color:#1a3a1a">' + masked + '</span>';
+}
+
+function toggleUrlReveal() {
+  urlRevealed = !urlRevealed;
+  const btn = document.getElementById('urlRevealBtn');
+  btn.style.color = urlRevealed ? 'var(--green)' : 'var(--muted)';
+  btn.title = urlRevealed ? 'Hide key' : 'Reveal key';
+  updateUrlMask(document.getElementById('scriptUrl'));
+  playClick();
+}
+
+// Also call updateUrlMask after injectUrl finishes typing
+const _rawInjectUrl = window.injectUrl;
+</script>
+</body>
+</html>
